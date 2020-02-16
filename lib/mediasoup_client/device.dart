@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter_mediasoup/mediasoup_client/dtls_parameters.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_utils.dart';
 import 'package:flutter_mediasoup/mediasoup_client/transport.dart';
 import 'package:flutter_webrtc/webrtc.dart';
@@ -70,14 +73,12 @@ class Device {
     dtlsParameters,
     sctpParameters,
   }) async {
-    return Transport.fromMap({
-      "id": id,
-      "iceParameters": iceParameters,
-      "iceCandidates": iceCandidates,
-      "dtlsParameters": dtlsParameters,
-      "sctpParameters": sctpParameters,
-      "direction": "send"
-    });
+    return _createTransport("send", peerId, media,
+      id: id,
+      iceParameters: iceParameters,
+      iceCandidates: iceCandidates,
+      dtlsParameters: dtlsParameters,
+      sctpParameters: sctpParameters);
   }
 
   createRecvTransport(peerId, media, {
@@ -87,18 +88,30 @@ class Device {
     dtlsParameters,
     sctpParameters,
   }) async {
+    return _createTransport("recv", peerId, media,
+      id: id,
+      iceParameters: iceParameters,
+      iceCandidates: iceCandidates,
+      dtlsParameters: dtlsParameters,
+      sctpParameters: sctpParameters);
+  }
+
+  _createTransport(direction, peerId, media, {
+    id,
+    iceParameters,
+    iceCandidates,
+    dtlsParameters,
+    sctpParameters,
+  }) {
     return Transport.fromMap({
       "id": id,
       "iceParameters": iceParameters,
       "iceCandidates": iceCandidates,
       "dtlsParameters": dtlsParameters,
       "sctpParameters": sctpParameters,
-      "direction": "recv"
+      "direction": direction
     });
-  }
-
-  _createTransport() {
-
+  
   }
 
   // _createPeerConnection(id, media, userScreen) async {

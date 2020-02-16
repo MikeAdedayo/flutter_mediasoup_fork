@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:eventify/eventify.dart';
 import 'package:executor/executor.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_unified_plan.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_utils.dart';
@@ -13,7 +14,7 @@ import 'dtls_parameters.dart';
 import 'ice_candidate.dart';
 
 @serializable
-class Transport {
+class Transport extends EventEmitter {
   String id;
   List<IceCandidate> iceCandidates;
   DtlsParameters dtlsParameters;
@@ -22,7 +23,7 @@ class Transport {
   RemoteSdp _remoteSdp;
 
   RTCPeerConnection pc;
-  num nextMidId;
+  static num nextMidId = 1000;
 
   Function onAddRemoteStream;
   RTCSignalingState state;
@@ -33,8 +34,6 @@ class Transport {
 
   Executor executor = new Executor(concurrency: 1);
 
-  Function onProduce;
-
   Transport({
     this.id,
     this.direction,
@@ -42,7 +41,7 @@ class Transport {
     this.iceCandidates,
     this.dtlsParameters,
     this.sctpParameters}) {
-    nextMidId = 0;
+    _transportReady = false;
     _init();
   }
 
@@ -57,7 +56,6 @@ class Transport {
     pc = await createPeerConnection(Map<String, dynamic>.from(_config), Map<String, dynamic>.from(_constraints));
 
     pc.onIceCandidate = (candidate) async {
-      print(candidate.toString());
       await pc.addCandidate(candidate);
     };
 
@@ -85,9 +83,9 @@ class Transport {
     pc.onAddTrack = (MediaStream stream, MediaStreamTrack track) {
       print("on Add track");
 
-      track.enabled = true;
-      track.setVolume(10);
-      track.enableSpeakerphone(true);
+      // track.enabled = true;
+      // track.setVolume(10);
+      // track.enableSpeakerphone(true);
     };
 
     pc.onRemoveStream = (stream) {
@@ -127,6 +125,18 @@ class Transport {
     }
   }
 
+  _emitPromise(String eventName, dynamic eventData) async {
+    Completer eventCompleter = Completer();
+    emit(eventName, null, {
+      "data": eventData,
+      "cb": () {
+        eventCompleter.complete();
+      }
+    });
+
+    return eventCompleter.future;
+  }
+
   _setupTransport(localDtlsRole, localSdpObject) async {
 		// Get our local DTLS parameters.
 		Map dtlsParameters = extractDtlsParameters(localSdpObject);
@@ -141,6 +151,9 @@ class Transport {
 		// await this.safeEmitAsPromise('@connect', { dtlsParameters });
 
 		_transportReady = true;
+
+
+    await _emitPromise('connect', dtlsParameters);
 	}
 
   produce({
@@ -155,19 +168,25 @@ class Transport {
     executor.scheduleTask(() async {
       Map mediaSectionIdx = _remoteSdp.getNextMediaSectionIdx();
 
-      // List<MediaStreamTrack> tracksToRemove;
-      // if (kind == "video") {
-      //   tracksToRemove = stream.getAudioTracks();
-      // }
-      // if (kind == "audio") {
-      //   tracksToRemove = stream.getVideoTracks();
-      // }
+      MediaStreamTrack track;
+      RTCRtpMediaType mediaType;
+      if (kind == "video") {
+        track = stream.getVideoTracks().first;
+        mediaType = RTCRtpMediaType.RTCRtpMediaTypeVideo;
+      }
+      if (kind == "audio") {
+        track = stream.getAudioTracks().first;
+        mediaType = RTCRtpMediaType.RTCRtpMediaTypeAudio;
+      }
 
-      // for (int i = 0; i < tracksToRemove.length; i++) {
-      //   await stream.removeTrack(tracksToRemove[i]);
-      // }
-
-      pc.addStream(stream);
+      // RTCRtpTransceiverInit init = RTCRtpTransceiverInit(
+      //   RTCRtpTransceiverDirection.RTCRtpTransceiverDirectionSendOnly, 
+      //   [stream.id]
+      // );
+      // RTCRtpTransceiver transceiver = await pc.addTransceiverOfType(mediaType, init);
+      // transceiver.sender.setTrack(track, true);
+      RTCRtpSender sender = await pc.addTrack(track, [stream.id]);
+      // await pc.addStream(stream);
 
       RTCSessionDescription offer = await pc.createOffer({
           'mandatory': {
@@ -178,7 +197,9 @@ class Transport {
         }
       );
       Map localSdpObject = parse(offer.sdp);
-      await _setupTransport('server', localSdpObject);
+      if (!_transportReady) {
+        await _setupTransport('server', localSdpObject);
+      }
 
       await pc.setLocalDescription(offer);
 
@@ -190,7 +211,7 @@ class Transport {
       Map offerMediaObject = localSdpObject["media"][mediaSectionIdx["idx"]];
 
       // Set MID
-      String localId = offerMediaObject["mid"];
+      String localId = (nextMidId++).toString();
       sendingRtpParameters["mid"] = localId;
 
       // Set RTCP CNAME
@@ -208,17 +229,14 @@ class Transport {
       );
 
       RTCSessionDescription answer = RTCSessionDescription(_remoteSdp.getSdp(), 'answer');
-      print(answer.sdp);
 
       pc.setRemoteDescription(answer);
 
-      if (onProduce != null) {
-        onProduce({
-          "kind": kind,
-          "localId": localId,
-          "rtpParameters": sendingRtpParameters
-        });
-      }
+      emit('produce', null, {
+        "kind": kind,
+        "localId": localId,
+        "rtpParameters": sendingRtpParameters
+      });
     });
   }
 
@@ -231,8 +249,6 @@ class Transport {
 
       executor.scheduleTask(() async {
         String localId = (nextMidId++).toString();
-
-        print(jsonEncode(rtpParameters));
 
         _remoteSdp.receive(
           mid: localId,
@@ -259,7 +275,9 @@ class Transport {
 
         answer.sdp = write(localSdpObject, null);
 
-        _setupTransport('client', localSdpObject);
+        if (!_transportReady) {
+          await _setupTransport('client', localSdpObject);
+        }
 
         print("State: $state");
         await pc.setLocalDescription(answer);

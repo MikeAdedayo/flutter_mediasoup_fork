@@ -13,13 +13,15 @@ dependencies:
 
   path_provider: ^1.5.1
   flutter_webrtc:
+    #path: ../flutter-webrtc
     git:
-      url: https://github.com/cloudwebrtc/flutter-webrtc.git
+      url: https://github.com/yonatann/flutter-webrtc.git
       ref: unified-plan
   json_annotation: ^3.0.0
   serializable: ^0.12.0
   sdp_transform: ^0.2.0
   executor: ^2.2.0
+  eventify: ^0.1.4
 
 dev_dependencies:
   flutter_test:

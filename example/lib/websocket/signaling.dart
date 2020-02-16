@@ -5,6 +5,7 @@ import 'package:flutter_mediasoup_example/websocket/websocket.dart';
 import 'package:flutter_webrtc/webrtc.dart';
 import 'random_string.dart';
 import 'package:flutter_mediasoup/flutter_mediasoup.dart';
+import 'package:eventify/eventify.dart';
 
 enum SignalingState {
   CallStateNew,
@@ -39,7 +40,7 @@ class Signaling {
   Map<String, RTCPeerConnection> _peerConnections = {};
   Random randomGen = Random();
 
-  MediaStream _localVideoStream, _localAudioStream;
+  MediaStream _localStream;
   List<MediaStream> _remoteStreams;
   SignalingStateCallback onStateChange;
   StreamStateCallback onLocalStream;
@@ -63,9 +64,9 @@ class Signaling {
   Signaling(this._host);
 
   close() {
-    if (_localVideoStream != null) {
-      _localVideoStream.dispose();
-      _localVideoStream = null;
+    if (_localStream != null) {
+      _localStream.dispose();
+      _localStream = null;
     }
 
     // _peerConnections.forEach((key, pc) {
@@ -75,8 +76,8 @@ class Signaling {
   }
 
   void switchCamera() {
-    if (_localVideoStream != null) {
-      _localVideoStream.getVideoTracks()[0].switchCamera();
+    if (_localStream != null) {
+      _localStream.getVideoTracks()[0].switchCamera();
     }
   }
 
@@ -96,18 +97,76 @@ class Signaling {
     await device.load(routerRtpCapabilities);
 
     // Create producer
-    _sendTransport = await _createTransport(peerId, media, producing: true, consuming: false);
+    print("Creating send transport");
+    Map sendTransportResponse = await _send('createWebRtcTransport', {
+      "producing": true,
+      "consuming": false,
+      "forceTcp": false,
+      "sctpCapabilities": {
+        "numStreams":
+          {
+            "OS":1024,
+            "MIS":1024
+          }
+      }
+    });
+    _sendTransport = await device.createSendTransport(peerId, media,
+      id: sendTransportResponse["id"],
+      iceParameters: sendTransportResponse["iceParameters"],
+      iceCandidates: sendTransportResponse["iceCandidates"],
+      dtlsParameters: sendTransportResponse["dtlsParameters"],
+      sctpParameters: sendTransportResponse["sctpParameters"],
+    );
+    _sendTransport.on('connect', this, (Event ev, Object context) async {
+      Map eventData = ev.eventData;
+      DtlsParameters dtlsParameters = eventData["data"];
+      print("Connecting send transport");
+      await _connectTransport(_sendTransport, dtlsParameters);
+      print("Send transport connceted");
+      eventData["cb"]();
+    });
 
-    _sendTransport.onProduce = (Map producer) async {
+    _sendTransport.on('produce', this, (Event ev, Object context) async {
+      Map producer = ev.eventData;
       dynamic res = await _send('produce', {
         'transportId': _sendTransport.id,
         'kind': producer["kind"],
         'rtpParameters': producer['rtpParameters']
       });
       print(res);
-    };
+    });
 
-    _recvTransport = await _createTransport(peerId, media, producing: false, consuming: true);
+
+    Map recvTransportResponse = await _send('createWebRtcTransport', {
+      "producing": false,
+      "consuming": true,
+      "forceTcp": false,
+      "sctpCapabilities": {
+        "numStreams":
+          {
+            "OS":1024,
+            "MIS":1024
+          }
+      }
+    });
+    print("Creating receive transport");
+    _recvTransport = await device.createRecvTransport(peerId, media,
+      id: recvTransportResponse["id"],
+      iceParameters: recvTransportResponse["iceParameters"],
+      iceCandidates: recvTransportResponse["iceCandidates"],
+      dtlsParameters: recvTransportResponse["dtlsParameters"],
+      sctpParameters: recvTransportResponse["sctpParameters"],
+    );
+
+    _recvTransport.on('connect', this, (Event ev, Object context) async {
+      Map eventData = ev.eventData;
+      DtlsParameters dtlsParameters = eventData["data"];
+      print("Connecting receive transport");
+      await _connectTransport(_recvTransport, dtlsParameters);
+      print("receive transport connceted");
+      eventData["cb"]();
+    });
+
     _recvTransport.onAddRemoteStream = onAddRemoteStream;
 
     dynamic res = await _send('join', {
@@ -124,11 +183,10 @@ class Signaling {
       _peers = List<Peer>.from(res['peers'].map((peer) => Peer.fromJson(peer)));
       _updatePeers();
 
-      _localVideoStream = await createStream("video");
-      _localAudioStream = await createStream("audio");
-      onLocalStream(_localVideoStream);
-      // sendLocalStream(_localAudioStream, "audio");
-      // sendLocalStream(_localVideoStream, "video");
+      _localStream = await createStream();
+      onLocalStream(_localStream);
+      sendLocalStream(_localStream, "audio");
+      // sendLocalStream(_localStream, "video");
     }
   }
 
@@ -138,25 +196,19 @@ class Signaling {
       stream: stream, sendingRemoteRtpParameters: device.sendingRemoteRtpParameters('audio'));
   }
 
-  Future<MediaStream> createStream(String kind) async {
-    Map<String, dynamic> mediaConstraints;
-    if (kind == "audio") {
-      mediaConstraints = {
-        'audio': true
-      };
-    } else {
-      mediaConstraints = {
-        'video': {
-          'mandatory': {
-            'minWidth': '640', // Provide your own width, height and frame rate here
-            'minHeight': '480',
-            'minFrameRate': '30',
-          },
-          'facingMode': 'environment',
-          'optional': [],
-        }
-      };
-    }
+  Future<MediaStream> createStream() async {
+    Map<String, dynamic> mediaConstraints = {
+      'audio': true,
+      'video': {
+        'mandatory': {
+          'minWidth': '640', // Provide your own width, height and frame rate here
+          'minHeight': '480',
+          'minFrameRate': '30',
+        },
+        'facingMode': 'environment',
+        'optional': [],
+      }
+    };
 
     MediaStream stream = await navigator.getUserMedia(mediaConstraints);
     return stream;
@@ -198,8 +250,6 @@ class Signaling {
       print("Request: $method");
       switch (method) {
         case 'newConsumer':
-          print(message);
-
           _recvTransport.consume(id: message["data"]["id"], kind:  message["data"]["kind"], rtpParameters: message["data"]["rtpParameters"]);
 
           _accept(message);
@@ -302,9 +352,9 @@ class Signaling {
           var sessionId = data['session_id'];
           print('bye: ' + sessionId);
 
-          if (_localVideoStream != null) {
-            _localVideoStream.dispose();
-            _localVideoStream = null;
+          if (_localStream != null) {
+            _localStream.dispose();
+            _localStream = null;
           }
 
           // var pc = _peerConnections[to];
@@ -373,49 +423,11 @@ class Signaling {
     }
   }
 
-  _createTransport(String peerId, String media, { bool producing: false, bool consuming = false}) async {
-      Map res = await _send('createWebRtcTransport', {
-        "producing": producing,
-        "consuming": consuming,
-        "forceTcp": false,
-        "sctpCapabilities": {
-          "numStreams":
-            {
-              "OS":1024,
-              "MIS":1024
-            }
-        }
-      });
-
-      Transport transport;
-      if (consuming) {
-        transport = await device.createSendTransport(peerId, media,
-          id: res["id"],
-          iceParameters: res["iceParameters"],
-          iceCandidates: res["iceCandidates"],
-          dtlsParameters: res["dtlsParameters"],
-          sctpParameters: res["sctpParameters"],
-        );
-      } else if (producing) {
-        transport = await device.createRecvTransport(peerId, media,
-          id: res["id"],
-          iceParameters: res["iceParameters"],
-          iceCandidates: res["iceCandidates"],
-          dtlsParameters: res["dtlsParameters"],
-          sctpParameters: res["sctpParameters"],
-        );
-      }
-      _connectTransport(transport);
-
-      return transport;
-  }
-
-  _connectTransport(Transport transport) async {
-    Map res = await _send('connectWebRtcTransport', {
+  _connectTransport(Transport transport, DtlsParameters dtlsParameters) async {
+    await _send('connectWebRtcTransport', {
       'transportId': transport.id,
-      'dtlsParameters': transport.dtlsParameters.toMap()
+      'dtlsParameters': dtlsParameters.toMap()
     });
-    print(res);
   }
 
   _addDataChannel(id, RTCDataChannel channel) {

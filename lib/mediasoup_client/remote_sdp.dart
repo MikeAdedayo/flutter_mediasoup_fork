@@ -34,7 +34,7 @@ class RemoteSdp {
 	bool _planB;
 
 	// MediaSection instances indexed by MID.
-	Map<String, dynamic> _mediaSections = new Map();
+  Map<String, dynamic> _mediaSections = new Map();
 
 	// First MID.
 	String _firstMid;
@@ -272,11 +272,11 @@ class RemoteSdp {
 
 	_addMediaSection(MediaSection  newMediaSection) {
 		if (_firstMid == null) {
-			_firstMid = newMediaSection.mid;
+			_firstMid = newMediaSection.mid.toString();
     }
 
 		// Store it in the map.
-		_mediaSections[newMediaSection.mid] = newMediaSection;
+		_mediaSections[newMediaSection.mid.toString()] = newMediaSection;
 
 		// Update SDP object.
 		_sdpObject["media"].add(newMediaSection.getObject());

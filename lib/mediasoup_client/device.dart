@@ -21,7 +21,7 @@ class Device {
   Map _sendingRemoteRtpParametersByKind;
 
   Map<String, dynamic> config = {
-    'iceServers'         : [],
+    'iceServers'         : [{"url": "stun:stun.l.google.com:19302"},],
     'iceTransportPolicy' : 'all',
     'bundlePolicy'       : 'max-bundle',
     'rtcpMuxPolicy'      : 'require',
@@ -66,14 +66,14 @@ class Device {
 
   sendingRemoteRtpParameters(String kind) => _sendingRemoteRtpParametersByKind[kind];
 
-  createSendTransport(peerId, media, {
+  createSendTransport(peerId, {
     id,
     iceParameters,
     iceCandidates,
     dtlsParameters,
     sctpParameters,
   }) async {
-    return _createTransport("send", peerId, media,
+    return _createTransport("send", peerId,
       id: id,
       iceParameters: iceParameters,
       iceCandidates: iceCandidates,
@@ -81,14 +81,14 @@ class Device {
       sctpParameters: sctpParameters);
   }
 
-  createRecvTransport(peerId, media, {
+  createRecvTransport(peerId, {
     id,
     iceParameters,
     iceCandidates,
     dtlsParameters,
     sctpParameters,
   }) async {
-    return _createTransport("recv", peerId, media,
+    return _createTransport("recv", peerId,
       id: id,
       iceParameters: iceParameters,
       iceCandidates: iceCandidates,
@@ -96,7 +96,7 @@ class Device {
       sctpParameters: sctpParameters);
   }
 
-  _createTransport(direction, peerId, media, {
+  _createTransport(direction, peerId, {
     id,
     iceParameters,
     iceCandidates,
@@ -113,74 +113,6 @@ class Device {
     });
   
   }
-
-  // _createPeerConnection(id, media, userScreen) async {
-  //   if (media != 'data') _localStream = await createStream(media, userScreen);
-  //   print("creating peer connection");
-  //   RTCPeerConnection pc = await createPeerConnection(_iceServers, _config);
-  //   print("Adding local stream");
-  //   if (media != 'data') pc.addStream(_localStream);
-  //   pc.onIceCandidate = (candidate) async {
-  //     print(candidate);
-  //     await pc.addCandidate(candidate);
-  //   };
-
-  //   pc.onIceConnectionState = (state) {
-  //     print("Ice state: $state");
-  //   };
-
-  //   pc.onSignalingState = (state) {
-  //     print("State: $state");
-  //   };
-
-  //   pc.onAddStream = (stream) {
-  //     // if (this.onAddRemoteStream != null) this.onAddRemoteStream(stream);
-  //     //_remoteStreams.add(stream);
-  //   };
-
-  //   pc.onRemoveStream = (stream) {
-  //     // if (this.onRemoveRemoteStream != null) this.onRemoveRemoteStream(stream);
-  //     // _remoteStreams.removeWhere((it) {
-  //     //   return (it.id == stream.id);
-  //     // });
-  //   };
-
-  //   pc.onDataChannel = (channel) {
-  //     // _addDataChannel(id, channel);
-  //   };
-
-  //   return pc;
-  // }
-
-  // _createOffer(String id, RTCPeerConnection pc, String media) async {
-  //   DtlsParameters dtlsParameters;
-  //   try {
-  //     RTCSessionDescription s = await pc
-  //         .createOffer(media == 'data' ? _dcConstraints : _constraints);
-  //     print(parse(s.sdp));
-  //     dynamic parsedSDP = parse(s.sdp);
-  //     dtlsParameters = extractDtlsParameters(parsedSDP);
-  //     await pc.setLocalDescription(s);
-  //   } catch (e) {
-  //     print(e.toString());
-  //   }
-  //   return dtlsParameters;
-  // }
-
-  // _createAnswer(String id, RTCPeerConnection pc, media) async {
-  //   try {
-  //     RTCSessionDescription s = await pc
-  //         .createAnswer(media == 'data' ? _dcConstraints : _constraints);
-  //     pc.setLocalDescription(s);
-  //     _send('answer', {
-  //       'to': id,
-  //       'description': {'sdp': s.sdp, 'type': s.type},
-  //       'session_id': this._sessionId,
-  //     });
-  //   } catch (e) {
-  //     print(e.toString());
-  //   }
-  // }
   
   static fromJson(Map json) => _$DeviceFromJson(json);
 }

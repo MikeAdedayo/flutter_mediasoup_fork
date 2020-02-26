@@ -110,7 +110,7 @@ class Signaling {
           }
       }
     });
-    _sendTransport = await device.createSendTransport(peerId, media,
+    _sendTransport = await device.createSendTransport(peerId,
       id: sendTransportResponse["id"],
       iceParameters: sendTransportResponse["iceParameters"],
       iceCandidates: sendTransportResponse["iceCandidates"],
@@ -127,11 +127,11 @@ class Signaling {
     });
 
     _sendTransport.on('produce', this, (Event ev, Object context) async {
-      Map producer = ev.eventData;
+      Producer producer = ev.eventData;
       dynamic res = await _send('produce', {
         'transportId': _sendTransport.id,
-        'kind': producer["kind"],
-        'rtpParameters': producer['rtpParameters']
+        'kind': producer.kind,
+        'rtpParameters': producer.rtpParameters
       });
       print(res);
     });
@@ -150,7 +150,7 @@ class Signaling {
       }
     });
     print("Creating receive transport");
-    _recvTransport = await device.createRecvTransport(peerId, media,
+    _recvTransport = await device.createRecvTransport(peerId,
       id: recvTransportResponse["id"],
       iceParameters: recvTransportResponse["iceParameters"],
       iceCandidates: recvTransportResponse["iceCandidates"],
@@ -258,131 +258,6 @@ class Signaling {
     }
 
     requestQueue.remove(requestId);
-    return;
-
-    switch (mapData['type']) {
-      case 'peers':
-        {
-          List<dynamic> peers = data;
-          if (this.onPeersUpdate != null) {
-            Map<String, dynamic> event = new Map<String, dynamic>();
-            event['self'] = _selfId;
-            event['peers'] = peers;
-            this.onPeersUpdate(event);
-          }
-        }
-        break;
-      case 'offer':
-        {
-          var id = data['from'];
-          var description = data['description'];
-          var media = data['media'];
-          var sessionId = data['session_id'];
-          this._sessionId = sessionId;
-
-          if (this.onStateChange != null) {
-            this.onStateChange(SignalingState.CallStateNew);
-          }
-
-          // RTCPeerConnection pc = await _createPeerConnection(id, media, false);
-          // _peerConnections[id] = pc;
-          // await pc.setRemoteDescription(new RTCSessionDescription(
-          //     description['sdp'], description['type']));
-          // await _createAnswer(id, pc, media);
-          // if (this._remoteCandidates.length > 0) {
-          //   _remoteCandidates.forEach((candidate) async {
-          //     await pc.addCandidate(candidate);
-          //   });
-          //   _remoteCandidates.clear();
-          // }
-        }
-        break;
-      case 'answer':
-        {
-          var id = data['from'];
-          var description = data['description'];
-
-          // var pc = _peerConnections[id];
-          // if (pc != null) {
-          //   await pc.setRemoteDescription(new RTCSessionDescription(
-          //       description['sdp'], description['type']));
-          // }
-        }
-        break;
-      case 'candidate':
-        {
-          // var id = data['from'];
-          // var candidateMap = data['candidate'];
-          // var pc = _peerConnections[id];
-          // RTCIceCandidate candidate = new RTCIceCandidate(
-          //     candidateMap['candidate'],
-          //     candidateMap['sdpMid'],
-          //     candidateMap['sdpMLineIndex']);
-          // if (pc != null) {
-          //   await pc.addCandidate(candidate);
-          // } else {
-          //   _remoteCandidates.add(candidate);
-          // }
-        }
-        break;
-      case 'leave':
-        {
-          var id = data;
-          // var pc = _peerConnections.remove(id);
-          // _dataChannels.remove(id);
-
-          // if (_localStream != null) {
-          //   _localStream.dispose();
-          //   _localStream = null;
-          // }
-
-          // if (pc != null) {
-          //   pc.close();
-          // }
-          // this._sessionId = null;
-          // if (this.onStateChange != null) {
-          //   this.onStateChange(SignalingState.CallStateBye);
-          // }
-        }
-        break;
-      case 'bye':
-        {
-          var from = data['from'];
-          var to = data['to'];
-          var sessionId = data['session_id'];
-          print('bye: ' + sessionId);
-
-          if (_localStream != null) {
-            _localStream.dispose();
-            _localStream = null;
-          }
-
-          // var pc = _peerConnections[to];
-          // if (pc != null) {
-          //   pc.close();
-          //   _peerConnections.remove(to);
-          // }
-
-          var dc = _dataChannels[to];
-          if (dc != null) {
-            dc.close();
-            _dataChannels.remove(to);
-          }
-
-          this._sessionId = null;
-          if (this.onStateChange != null) {
-            this.onStateChange(SignalingState.CallStateBye);
-          }
-        }
-        break;
-      case 'keepalive':
-        {
-          print('keepalive response!');
-        }
-        break;
-      default:
-        break;
-    }
   }
 
   void connect() async {

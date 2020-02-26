@@ -7,6 +7,7 @@ export 'package:flutter_mediasoup/mediasoup_client/peer.dart';
 export 'package:flutter_mediasoup/mediasoup_client/request.dart';
 export 'package:flutter_mediasoup/mediasoup_client/device.dart';
 export 'package:flutter_mediasoup/mediasoup_client/dtls_parameters.dart';
+export 'package:flutter_mediasoup/mediasoup_client/producer.dart';
 
 class FlutterMediasoup {
   static const MethodChannel _channel =

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:eventify/eventify.dart';
 import 'package:executor/executor.dart';
+import 'package:flutter_mediasoup/mediasoup_client/producer.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_unified_plan.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_utils.dart';
 import 'package:flutter_mediasoup/mediasoup_client/remote_sdp.dart';
@@ -83,9 +84,9 @@ class Transport extends EventEmitter {
     pc.onAddTrack = (MediaStream stream, MediaStreamTrack track) {
       print("on Add track");
 
-      // track.enabled = true;
-      // track.setVolume(10);
-      // track.enableSpeakerphone(true);
+      emit("onAddTrack", null, {
+        "track": track
+      });
     };
 
     pc.onRemoveStream = (stream) {
@@ -101,7 +102,7 @@ class Transport extends EventEmitter {
   }
 
   Map<String, dynamic> _config = {
-    'iceServers'         : [],
+    'iceServers'         : [{"url": "stun:stun.l.google.com:19302"},],
     'iceTransportPolicy' : 'all',
     'bundlePolicy'       : 'max-bundle',
     'sdpSemantics'       : 'unified-plan',
@@ -232,11 +233,13 @@ class Transport extends EventEmitter {
 
       pc.setRemoteDescription(answer);
 
-      emit('produce', null, {
-        "kind": kind,
-        "localId": localId,
-        "rtpParameters": sendingRtpParameters
-      });
+      emit('produce', null, Producer(
+        track: track,
+        sender: sender,
+        kind: kind,
+        localId: localId,
+        rtpParameters: sendingRtpParameters
+      ));
     });
   }
 

@@ -62,8 +62,7 @@ class SimpleWebSocket {
           Uri.parse('https://$host:$port/ws?roomId=$roomId&peerId=$peerId')); // form the correct url here
       request.headers.add('Connection', 'Upgrade');
       request.headers.add('Upgrade', 'websocket');
-      request.headers.add(
-          'Sec-WebSocket-Version', '13'); // insert the correct version here
+      request.headers.add('Sec-WebSocket-Version', '13'); // insert the correct version here
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
       request.headers.add('sec-websocket-protocol', 'protoo');
 

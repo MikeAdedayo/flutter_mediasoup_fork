@@ -288,6 +288,10 @@ class Transport extends EventEmitter {
       
   }
 
+  close() {
+    pc.close();
+  }
+
   factory Transport.fromMap(Map map) {
     List<IceCandidate> iceCandidates = List<IceCandidate>.from((map["iceCandidates"] as List).map((candidate) => IceCandidate.fromJson(candidate)));
     Map iceParameters  = map["iceParameters"];

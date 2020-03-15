@@ -191,7 +191,7 @@ class Signaling {
   }
 
   sendLocalStream(MediaStream stream, String kind) async {
-    Map producer = await _sendTransport.produce(
+    Producer producer = await _sendTransport.produce(
       kind: kind,
       stream: stream, sendingRemoteRtpParameters: device.sendingRemoteRtpParameters('audio'));
   }

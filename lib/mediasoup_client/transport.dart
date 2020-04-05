@@ -186,6 +186,7 @@ class Transport extends EventEmitter {
       // );
       // RTCRtpTransceiver transceiver = await pc.addTransceiverOfType(mediaType, init);
       // transceiver.sender.setTrack(track, true);
+      print("Adding track: ${track.id}");
       RTCRtpSender sender = await pc.addTrack(track, [stream.id]);
       // await pc.addStream(stream);
 
@@ -286,6 +287,27 @@ class Transport extends EventEmitter {
         await pc.setLocalDescription(answer);
       });
       
+  }
+
+  stopSending(Producer producer) async {
+    // transceiver.sender.replaceTrack(null);
+    // pc.removeTrack(producer.sender);
+    _remoteSdp.closeMediaSection();
+    RTCSessionDescription offer = await pc.createOffer({
+          'mandatory': {
+            'OfferToReceiveAudio': false,
+            'OfferToReceiveVideo': false,
+          },
+          'optional': [],
+        });
+    await pc.setLocalDescription(offer);
+    RTCSessionDescription answer = RTCSessionDescription(_remoteSdp.getSdp(), 'answer');
+    await pc.setRemoteDescription(answer);
+  }
+
+  closeProducer(Producer producer) {
+    pc.closeSender(producer.sender);
+    // pc.removeTrack(producer.sender);
   }
 
   close() {

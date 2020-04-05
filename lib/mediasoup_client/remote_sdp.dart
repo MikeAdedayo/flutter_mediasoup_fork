@@ -201,18 +201,18 @@ class RemoteSdp {
 	}
 
 	disableMediaSection(String mid) {
-		MediaSection mediaSection = _mediaSections["mid"];
+		MediaSection mediaSection = _mediaSections[mid];
 
 		mediaSection.disable();
 	}
 
-	closeMediaSection(String mid) {
-		MediaSection mediaSection = _mediaSections["mid"];
+	closeMediaSection({String mid}) {
+		MediaSection mediaSection = _mediaSections[mid ?? _firstMid];
 
 		// NOTE: Closing the first m section is a pain since it invalidates the
 		// bundled transport, so let's avoid it.
-		if (mid == _firstMid) {
-			disableMediaSection(mid);
+		if (mediaSection.mid == int.tryParse(_firstMid)) {
+			disableMediaSection(mid ?? _firstMid);
 
 			return;
 		}

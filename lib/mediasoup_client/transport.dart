@@ -8,6 +8,8 @@ import 'package:flutter_mediasoup/mediasoup_client/sdp_unified_plan.dart';
 import 'package:flutter_mediasoup/mediasoup_client/sdp_utils.dart';
 import 'package:flutter_mediasoup/mediasoup_client/remote_sdp.dart';
 import 'package:flutter_webrtc/rtc_peerconnection.dart';
+import 'package:flutter_webrtc/rtc_rtp_receiver.dart';
+import 'package:flutter_webrtc/rtc_rtp_sender.dart';
 import 'package:flutter_webrtc/webrtc.dart';
 import 'package:sdp_transform/sdp_transform.dart';
 import 'package:serializable/serializable.dart';

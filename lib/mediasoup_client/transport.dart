@@ -182,15 +182,8 @@ class Transport extends EventEmitter {
         mediaType = RTCRtpMediaType.RTCRtpMediaTypeAudio;
       }
 
-      // RTCRtpTransceiverInit init = RTCRtpTransceiverInit(
-      //   RTCRtpTransceiverDirection.RTCRtpTransceiverDirectionSendOnly, 
-      //   [stream.id]
-      // );
-      // RTCRtpTransceiver transceiver = await pc.addTransceiverOfType(mediaType, init);
-      // transceiver.sender.setTrack(track, true);
       print("Adding track: ${track.id}");
       RTCRtpSender sender = await pc.addTrack(track, [stream.id]);
-      // await pc.addStream(stream);
 
       RTCSessionDescription offer = await pc.createOffer({
           'mandatory': {
@@ -309,11 +302,12 @@ class Transport extends EventEmitter {
 
   closeProducer(Producer producer) {
     pc.closeSender(producer.sender);
-    // pc.removeTrack(producer.sender);
   }
 
   close() {
-    pc.close();
+    if (pc != null) {
+      pc.close();
+    }
   }
 
   factory Transport.fromMap(Map map) {

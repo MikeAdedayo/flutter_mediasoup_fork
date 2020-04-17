@@ -304,9 +304,10 @@ class Transport extends EventEmitter {
     pc.closeSender(producer.sender);
   }
 
-  close() {
+  close() async {
     if (pc != null) {
-      pc.close();
+      await pc.close();
+      pc.dispose();
     }
   }
 

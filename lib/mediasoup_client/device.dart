@@ -45,8 +45,9 @@ class Device {
   getNativeRtpCapabilities() async {
     RTCPeerConnection pc = await createPeerConnection(config, constraints);
 
-    RTCSessionDescription offer = await pc.createOffer(constraints);
+    RTCSessionDescription offer = await pc.createOffer(constraints);    
     await pc.close();
+    pc.dispose();
 
     Map sdpObject = parse(offer.sdp);
     return extractRtpCapabilities(sdpObject);

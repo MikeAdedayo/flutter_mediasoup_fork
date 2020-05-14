@@ -142,7 +142,7 @@ packages:
     description:
       path: "."
       ref: unified-plan
-      resolved-ref: "096b2bc5cecab777aa314e901484398490eefc55"
+      resolved-ref: "85d793e99de7d669c071e3a80c82f2607638aad9"
       url: "https://github.com/yonatann/flutter-webrtc.git"
     source: git
     version: "0.2.6"

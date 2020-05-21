@@ -18,7 +18,7 @@ class Device {
 
   Map _extendedRtpCapabilities;
   Map _recvRtpCapabilities;
-  Map _sendingRemoteRtpParametersByKind;
+  Map _sendingRemoteRtpParametersByKind = Map();
 
   Map<String, dynamic> config = {
     'iceServers'         : [{"url": "stun:stun.l.google.com:19302"},],
@@ -58,7 +58,6 @@ class Device {
 
     _extendedRtpCapabilities = getExtendedRtpCapabilities(nativeRtpCapabilities, routerRtpCapabilities);
 
-    _sendingRemoteRtpParametersByKind = Map();
     _sendingRemoteRtpParametersByKind["video"] = getSendingRemoteRtpParameters("video", _extendedRtpCapabilities);
     _sendingRemoteRtpParametersByKind["audio"] = getSendingRemoteRtpParameters("audio", _extendedRtpCapabilities);
 

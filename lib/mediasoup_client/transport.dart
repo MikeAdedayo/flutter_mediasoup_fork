@@ -32,10 +32,26 @@ class Transport extends EventEmitter {
   RTCSignalingState state;
   bool _transportReady;
   String direction;
+  bool startAudioSession;
 
   Completer initCompleter = Completer();
 
   Executor executor = new Executor(concurrency: 1);
+
+  Map<String, dynamic> _config = {
+    'iceServers'         : [{"url": "stun:stun.l.google.com:19302"},],
+    'iceTransportPolicy' : 'all',
+    'bundlePolicy'       : 'max-bundle',
+    'sdpSemantics'       : 'unified-plan',
+    'rtcpMuxPolicy'      : 'require'
+  };
+
+  final Map<String, dynamic> _constraints = {
+    'mandatory': {},
+    'optional': [
+      {'DtlsSrtpKeyAgreement': true},
+    ],
+  };
 
   Transport({
     this.id,
@@ -43,9 +59,11 @@ class Transport extends EventEmitter {
     this.iceParameters, 
     this.iceCandidates,
     this.dtlsParameters,
-    this.sctpParameters}) {
-    _transportReady = false;
-    _init();
+    this.sctpParameters,
+    this.startAudioSession = true}) {
+      _config['startAudioSession'] = startAudioSession;
+      _transportReady = false;
+      _init();
   }
 
   _init() async {
@@ -102,21 +120,6 @@ class Transport extends EventEmitter {
 
     initCompleter.complete();
   }
-
-  Map<String, dynamic> _config = {
-    'iceServers'         : [{"url": "stun:stun.l.google.com:19302"},],
-    'iceTransportPolicy' : 'all',
-    'bundlePolicy'       : 'max-bundle',
-    'sdpSemantics'       : 'unified-plan',
-    'rtcpMuxPolicy'      : 'require'
-  };
-
-  final Map<String, dynamic> _constraints = {
-    'mandatory': {},
-    'optional': [
-      {'DtlsSrtpKeyAgreement': true},
-    ],
-  };
 
   _showTrackStats(MediaStreamTrack track) async {
     while(true) {
@@ -318,6 +321,7 @@ class Transport extends EventEmitter {
     Map sctpParameters = map["sctpParameters"];
     String direction = map["direction"];
     String id = map["id"];
+    bool startAudioSession = map["startAudioSession"];
     
     Transport transport = Transport(
       id: id,
@@ -325,7 +329,8 @@ class Transport extends EventEmitter {
       iceCandidates: iceCandidates,
       iceParameters: iceParameters,
       dtlsParameters: dtlsParameters,
-      sctpParameters: sctpParameters
+      sctpParameters: sctpParameters,
+      startAudioSession: startAudioSession
     );
 
 

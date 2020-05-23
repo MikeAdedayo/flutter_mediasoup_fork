@@ -25,7 +25,8 @@ class Device {
     'iceTransportPolicy' : 'all',
     'bundlePolicy'       : 'max-bundle',
     'rtcpMuxPolicy'      : 'require',
-    'sdpSemantics'       : 'plan-b'
+    'sdpSemantics'       : 'plan-b',
+    'startAudioSession'  : false
   };
 
   final Map<String, dynamic> constraints = {
@@ -72,6 +73,7 @@ class Device {
     iceCandidates,
     dtlsParameters,
     sctpParameters,
+    startAudioSession = true
   }) async {
     return _createTransport("send", peerId,
       id: id,
@@ -102,6 +104,7 @@ class Device {
     iceCandidates,
     dtlsParameters,
     sctpParameters,
+    startAudioSession = false
   }) {
     return Transport.fromMap({
       "id": id,
@@ -109,7 +112,8 @@ class Device {
       "iceCandidates": iceCandidates,
       "dtlsParameters": dtlsParameters,
       "sctpParameters": sctpParameters,
-      "direction": direction
+      "direction": direction,
+      "startAudioSession": startAudioSession
     });
   
   }

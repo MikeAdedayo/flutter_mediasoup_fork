@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  path_provider: ^1.5.1
+  path_provider: ^2.1.0
   flutter_webrtc:
     # path: ../flutter-webrtc
     git:
